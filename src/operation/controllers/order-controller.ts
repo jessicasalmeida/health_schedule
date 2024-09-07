@@ -5,9 +5,11 @@ import { OrderPresenter } from "../presenters/order";
 import { NewOrderDTO } from "../../common/dtos/order.dto";
 
 export class OrderController {
-    constructor(private readonly orderUseCase: OrderUseCase) {
+    constructor(orderDataSource: OrderDataSource) {
+        const orderGateway = new OrderGateway(orderDataSource);
+        OrderUseCase.listenForNewOrder(orderGateway);
     }
-
+    
     static async receiveOrder(newOrder: NewOrderDTO, orderDataSource: OrderDataSource) {
         const orderGateway = new OrderGateway(orderDataSource);
         if (!orderGateway) {

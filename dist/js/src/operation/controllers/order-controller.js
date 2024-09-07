@@ -14,8 +14,9 @@ const order_use_case_1 = require("../../core/usercases/order-use-case");
 const order_1 = require("../gateways/order");
 const order_2 = require("../presenters/order");
 class OrderController {
-    constructor(orderUseCase) {
-        this.orderUseCase = orderUseCase;
+    constructor(orderDataSource) {
+        const orderGateway = new order_1.OrderGateway(orderDataSource);
+        order_use_case_1.OrderUseCase.listenForNewOrder(orderGateway);
     }
     static receiveOrder(newOrder, orderDataSource) {
         return __awaiter(this, void 0, void 0, function* () {

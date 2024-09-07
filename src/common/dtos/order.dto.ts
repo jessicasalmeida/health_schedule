@@ -45,4 +45,6 @@ export type UserDTO = {
     cpf: string;
     name: string;
     email: string;
+    cep: string;
+    telefone: string;
 }

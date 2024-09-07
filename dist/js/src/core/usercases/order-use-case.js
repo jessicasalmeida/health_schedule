@@ -12,13 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderUseCase = void 0;
 const order_1 = require("../entities/order");
 const generators_1 = require("../../common/helpers/generators");
+const mq_1 = require("../../external/mq/mq");
 class OrderUseCase {
+    constructor(mq) {
+        OrderUseCase.mq = mq;
+    }
     static receiveOrder(newOrder, orderGateway) {
         return __awaiter(this, void 0, void 0, function* () {
             const status = "RECEIVED";
             let estimatedDelivery = newOrder.cart.estimatedTime;
             const ordersReceived = (yield OrderUseCase.getAllActiveOrders(orderGateway));
-            if (ordersReceived.length > 0) {
+            if (ordersReceived != null) {
                 let idsOrders = [];
                 const ordersQueue = ordersReceived.filter(value => (value.status == "RECEIVED" || value.status == "PREPARING")
                     && Date.now().valueOf() >= value.receiveDate.valueOf());
@@ -30,7 +34,7 @@ class OrderUseCase {
             }
             const novoId = (0, generators_1.generateRandomString)();
             const order = new order_1.OrderEntity(novoId, new Date(), estimatedDelivery, status, newOrder.cart);
-            const nOrder = orderGateway.create(order);
+            const nOrder = yield orderGateway.create(order);
             if (nOrder) {
                 return nOrder;
             }
@@ -77,13 +81,13 @@ class OrderUseCase {
     static updateStatusToReady(idOrder, orderGateway) {
         return __awaiter(this, void 0, void 0, function* () {
             const order = yield orderGateway.findOne(idOrder);
-            if (order != null) {
+            if (order) {
                 order.status = "READY";
                 yield orderGateway.update(idOrder, order);
                 return OrderUseCase.sendNotificationDelivery(idOrder, orderGateway);
             }
             else {
-                return "Ordem não encontrada";
+                return "Order não encontrada";
             }
         });
     }
@@ -120,6 +124,16 @@ class OrderUseCase {
             else {
                 return null;
             }
+        });
+    }
+    static listenForNewOrder(orderGateway) {
+        return __awaiter(this, void 0, void 0, function* () {
+            OrderUseCase.mq = new mq_1.RabbitMQ();
+            yield OrderUseCase.mq.connect();
+            yield OrderUseCase.mq.consume('new_order', (message) => __awaiter(this, void 0, void 0, function* () {
+                const newOrder = message;
+                OrderUseCase.receiveOrder(newOrder, orderGateway);
+            }));
         });
     }
 }

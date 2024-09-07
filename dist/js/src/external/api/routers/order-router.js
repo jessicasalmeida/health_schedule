@@ -37,6 +37,7 @@ const express_1 = __importStar(require("express"));
 const order_repository_mongo_bd_1 = require("../../data-sources/mongodb/order-repository-mongo-bd");
 const order_controller_1 = require("../../../operation/controllers/order-controller");
 const orderRepository = new order_repository_mongo_bd_1.OrderRepositoryMongoBd();
+const orderController = new order_controller_1.OrderController(orderRepository);
 exports.orderRouter = (0, express_1.Router)();
 exports.orderRouter.use(express_1.default.json());
 exports.orderRouter.post('/receive/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {

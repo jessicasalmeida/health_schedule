@@ -1,26 +1,35 @@
-import { OrderGateway } from "../../operation/gateways/order";
+import { OrderGateway } from '../../operation/gateways/order';
 import { OrderEntity } from "../entities/order";
 import { generateRandomString } from "../../common/helpers/generators";
 import { NewOrderDTO } from "../../common/dtos/order.dto";
+import { RabbitMQ } from '../../external/mq/mq';
 
 export class OrderUseCase {
+    private static mq: RabbitMQ;
+
+    constructor(mq: RabbitMQ) {
+        OrderUseCase.mq = mq;
+    }
 
     static async receiveOrder(newOrder: NewOrderDTO, orderGateway: OrderGateway): Promise<OrderEntity | null> {
         const status = "RECEIVED";
+
         let estimatedDelivery: number = newOrder.cart.estimatedTime;
         const ordersReceived = (await OrderUseCase.getAllActiveOrders(orderGateway));
-        if (ordersReceived!.length > 0) {
-            let idsOrders = [] as number[];
-            const ordersQueue = ordersReceived!.filter(value =>
-                (value.status == "RECEIVED" || value.status == "PREPARING")
-                && Date.now().valueOf() >= value.receiveDate.valueOf());
+        if (ordersReceived != null) {
+            if (ordersReceived.length > 0) {
+                let idsOrders = [] as number[];
+                const ordersQueue = ordersReceived!.filter(value =>
+                    (value.status == "RECEIVED" || value.status == "PREPARING")
+                    && Date.now().valueOf() >= value.receiveDate.valueOf());
 
-            let lastIItem = ordersQueue.reduce((latest, current) => {
-                return current.receiveDate > latest.receiveDate ? current : latest;
-            }, ordersQueue[0]);
+                let lastIItem = ordersQueue.reduce((latest, current) => {
+                    return current.receiveDate > latest.receiveDate ? current : latest;
+                }, ordersQueue[0]);
 
-            const order = ordersReceived!.filter(o => o.id === lastIItem.id);
-            estimatedDelivery += order[0].deliveryTime;            
+                const order = ordersReceived!.filter(o => o.id === lastIItem.id);
+                estimatedDelivery += order[0].deliveryTime;
+            }
         }
 
         const novoId = generateRandomString();
@@ -32,7 +41,7 @@ export class OrderUseCase {
             status,
             newOrder.cart
         );
-        const nOrder = orderGateway.create(order);
+        const nOrder = await orderGateway.create(order);
         if (nOrder) {
             return nOrder;
         }
@@ -115,5 +124,14 @@ export class OrderUseCase {
             return null;
         }
 
+    }
+
+    static async listenForNewOrder(orderGateway: OrderGateway): Promise<void> {
+        OrderUseCase.mq = new RabbitMQ();
+        await OrderUseCase.mq.connect();
+        await OrderUseCase.mq.consume('new_order', async (message: any) => {
+            const newOrder: NewOrderDTO = message;
+            OrderUseCase.receiveOrder(newOrder, orderGateway);
+        });
     }
 }

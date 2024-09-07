@@ -1,8 +1,9 @@
 import express, { Router } from "express";
 import { OrderRepositoryMongoBd } from "../../data-sources/mongodb/order-repository-mongo-bd";
-import { OrderController } from "../../../operation/controllers/order-controller";
+import { OrderController } from '../../../operation/controllers/order-controller';
 
 const orderRepository = new OrderRepositoryMongoBd();
+const orderController = new OrderController(orderRepository);
 
 export const orderRouter = Router();
 
