@@ -23,14 +23,16 @@ class OrderUseCase {
             let estimatedDelivery = newOrder.cart.estimatedTime;
             const ordersReceived = (yield OrderUseCase.getAllActiveOrders(orderGateway));
             if (ordersReceived != null) {
-                let idsOrders = [];
-                const ordersQueue = ordersReceived.filter(value => (value.status == "RECEIVED" || value.status == "PREPARING")
-                    && Date.now().valueOf() >= value.receiveDate.valueOf());
-                let lastIItem = ordersQueue.reduce((latest, current) => {
-                    return current.receiveDate > latest.receiveDate ? current : latest;
-                }, ordersQueue[0]);
-                const order = ordersReceived.filter(o => o.id === lastIItem.id);
-                estimatedDelivery += order[0].deliveryTime;
+                if (ordersReceived.length > 0) {
+                    let idsOrders = [];
+                    const ordersQueue = ordersReceived.filter(value => (value.status == "RECEIVED" || value.status == "PREPARING")
+                        && Date.now().valueOf() >= value.receiveDate.valueOf());
+                    let lastIItem = ordersQueue.reduce((latest, current) => {
+                        return current.receiveDate > latest.receiveDate ? current : latest;
+                    }, ordersQueue[0]);
+                    const order = ordersReceived.filter(o => o.id === lastIItem.id);
+                    estimatedDelivery += order[0].deliveryTime;
+                }
             }
             const novoId = (0, generators_1.generateRandomString)();
             const order = new order_1.OrderEntity(novoId, new Date(), estimatedDelivery, status, newOrder.cart);

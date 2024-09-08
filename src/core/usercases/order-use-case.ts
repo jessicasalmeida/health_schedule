@@ -1,7 +1,7 @@
 import { OrderGateway } from '../../operation/gateways/order';
 import { OrderEntity } from "../entities/order";
 import { generateRandomString } from "../../common/helpers/generators";
-import { NewOrderDTO } from "../../common/dtos/order.dto";
+import { NewOrderDTO } from '../../common/dtos/order.dto';
 import { RabbitMQ } from '../../external/mq/mq';
 
 export class OrderUseCase {
@@ -46,6 +46,10 @@ export class OrderUseCase {
             return nOrder;
         }
         else {
+            OrderUseCase.mq = new RabbitMQ();
+            await OrderUseCase.mq.connect();
+            await OrderUseCase.mq.publish('rollback_new_order', { cart: newOrder.cart });
+            await OrderUseCase.mq.close();
             return null;
         }
     }
@@ -60,6 +64,7 @@ export class OrderUseCase {
             return null
         }
     }
+
 
     static async estimateDelivery(idOrder: string, orderGateway: OrderGateway): Promise<string> {
         const order = await orderGateway.findOne(idOrder);
@@ -131,6 +136,7 @@ export class OrderUseCase {
         await OrderUseCase.mq.connect();
         await OrderUseCase.mq.consume('new_order', async (message: any) => {
             const newOrder: NewOrderDTO = message;
+            console.log("Fila new_order: ID: " + newOrder.cart.id);
             OrderUseCase.receiveOrder(newOrder, orderGateway);
         });
     }
