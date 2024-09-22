@@ -17,8 +17,40 @@ export class RabbitMQ {
     this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
   }
 
+  async publishReply(queue: string, message: any, correlationId: string): Promise<void> {
+    this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {correlationId: correlationId});
+  }
+
+  async publishExclusive(queue: string, message: any): Promise<string> {
+    let resposta: string = "";
+    const correlationId = generateCorrelationId();
+
+    const replyQueue =await this.channel.assertQueue('', { exclusive: true,durable: false });
+
+    const message_with = {
+      message,
+      replyTo: replyQueue.queue,
+      correlationId,
+    };
+
+    this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message_with)), { correlationId, replyTo: replyQueue.queue });
+    await new Promise<boolean>((resolve) => {
+      this.channel.consume(replyQueue.queue, (msg) => {
+        if (msg!.properties.correlationId === correlationId) {
+          this.channel.ack(msg!);
+          resposta = JSON.parse(msg!.content.toString());
+          resolve(JSON.parse(msg!.content.toString()).inStock);
+        }
+      });
+    });
+
+    return resposta;
+  }
+
+
+
   async consume(queue: string, callback: (msg: any) => void): Promise<void> {
-    await this.channel.assertQueue(queue, { durable: true });
+    await this.channel.assertQueue(queue, { });
     this.channel.consume(queue, (msg) => {
       if (msg !== null) {
         const content = JSON.parse(msg.content.toString());
@@ -32,4 +64,8 @@ export class RabbitMQ {
     await this.channel.close();
     await this.connection.close();
   }
+
+}
+function generateCorrelationId() {
+  return Math.random().toString() + Math.random().toString();
 }

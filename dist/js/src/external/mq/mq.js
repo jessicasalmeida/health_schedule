@@ -53,6 +53,25 @@ class RabbitMQ {
             this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
         });
     }
+    publishExclusive(queue, message) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let resposta = "";
+            const correlationId = generateCorrelationId();
+            const { queue: replyQueue } = yield this.channel.assertQueue('', { exclusive: true });
+            this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), { correlationId, replyTo: replyQueue });
+            try {
+                const response = yield Promise.race([
+                    waitForResponse(this.channel, replyQueue, correlationId), // Espera a resposta do RabbitMQ
+                    timeout(5000)
+                ]);
+                resposta = response;
+            }
+            catch (error) {
+                console.error(`Error or timeout`);
+            }
+            return resposta;
+        });
+    }
     consume(queue, callback) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.channel.assertQueue(queue, { durable: true });
@@ -73,3 +92,20 @@ class RabbitMQ {
     }
 }
 exports.RabbitMQ = RabbitMQ;
+function generateCorrelationId() {
+    return Math.random().toString() + Math.random().toString();
+}
+function waitForResponse(channel, replyQueue, correlationId) {
+    return new Promise((resolve, reject) => {
+        channel.consume(replyQueue, (msg) => {
+            if ((msg === null || msg === void 0 ? void 0 : msg.properties.correlationId) === correlationId) {
+                resolve(msg.content.toString());
+            }
+        }, { noAck: true });
+    });
+}
+function timeout(ms) {
+    return new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), ms);
+    });
+}

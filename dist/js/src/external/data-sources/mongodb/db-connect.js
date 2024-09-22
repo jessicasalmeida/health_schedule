@@ -42,8 +42,10 @@ function connectToDataBase() {
         const client = new mongoDB.MongoClient(process.env.DB_CONN_STRING);
         yield client.connect();
         const db = client.db(process.env.DB_NAME);
-        const orderCollection = db.collection(process.env.ORDER_COLLECTION_NAME);
-        exports.collections.orders = orderCollection;
+        const doctorCollection = db.collection(process.env.DOCTOR_COLLECTION_NAME);
+        const appointmentCollection = db.collection(process.env.APPOINTMENT_COLLECTION_NAME);
+        exports.collections.doctor = doctorCollection;
+        exports.collections.appointment = appointmentCollection;
         console.log(`Conexão :` + process.env.DB_CONN_STRING);
     });
 }

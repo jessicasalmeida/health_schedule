@@ -1,15 +1,19 @@
-import swaggerUi from "swagger-ui-express";
-import swaggerOutput from "../public/swagger.json";
 import app from "./server";
-import { routes } from "./external/api/routers";
 import { connectToDataBase } from "./external/data-sources/mongodb/db-connect";
+import { AppointmentRepositoryImpl } from "./external/data-sources/mongodb/appointments-repository-mongo";
+import { ScheduleAppointmentUseCase } from "./core/usercases/appointment-use-case";
+import { RabbitMQ } from "./external/mq/mq";
+import { EmailNotificationService } from "./external/notification/notification-service";
 
-const port = 5000;
+const port = 8000;
+const mq = new RabbitMQ();
+const repository = new AppointmentRepositoryImpl();
+const notification = new EmailNotificationService();
+const useCase = new ScheduleAppointmentUseCase(repository,notification, mq);
 
 connectToDataBase()
     .then(()=> {
-        app.use('/', routes);
-        app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerOutput));
+        useCase.listeners();
         app.listen(port, () => {
             console.log(`Server is listening on port: ${port}`)
         });
