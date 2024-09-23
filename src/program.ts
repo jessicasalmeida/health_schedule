@@ -5,7 +5,7 @@ import { ScheduleAppointmentUseCase } from "./core/usercases/appointment-use-cas
 import { RabbitMQ } from "./external/mq/mq";
 import { EmailNotificationService } from "./external/notification/notification-service";
 
-const port = 8000;
+const port = 8001;
 const mq = new RabbitMQ();
 const repository = new AppointmentRepositoryImpl();
 const notification = new EmailNotificationService();
@@ -13,7 +13,6 @@ const useCase = new ScheduleAppointmentUseCase(repository,notification, mq);
 
 connectToDataBase()
     .then(()=> {
-        useCase.listeners();
         app.listen(port, () => {
             console.log(`Server is listening on port: ${port}`)
         });

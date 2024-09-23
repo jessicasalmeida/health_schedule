@@ -18,38 +18,50 @@ class ScheduleAppointmentUseCase {
         this.appointmentRepository = appointmentRepository;
         this.emailNotificationService = emailNotificationService;
         this.mq = mq;
+        console.log("Listernes");
+        this.listeners();
     }
-    reserveAppointment(appointment) {
+    reserveAppointment(paciente, idAppointment) {
         return __awaiter(this, void 0, void 0, function* () {
+            const appointment = yield this.appointmentRepository.findById(idAppointment);
+            if (!appointment) {
+                throw new not_found_error_1.NotFoundError("Appointment not founded");
+            }
             const isAvailable = yield this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
             if (!isAvailable) {
                 throw new conflict_error_1.ConflictError('Horário já está ocupado.');
             }
-            const newAppointment = yield this.appointmentRepository.save(appointment);
-            this.mq = new mq_1.RabbitMQ();
-            yield this.mq.connect();
-            yield this.mq.publish('sendNotification', { message: newAppointment });
-            yield this.mq.close();
-            return newAppointment;
+            appointment.patientId = paciente._id;
+            yield this.appointmentRepository.edit(appointment);
+            let doctor;
+            try {
+                this.mq = new mq_1.RabbitMQ();
+                yield this.mq.connect();
+                console.log("Publicado getDoctor");
+                doctor = (yield this.mq.publishExclusive('getDoctor', { id: appointment.doctorId }));
+                yield this.mq.close();
+            }
+            catch (ConflictError) {
+                throw new Error("Erro ao publicar mensagem");
+            }
+            // this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
         });
     }
     newAppointment(appointments) {
         return __awaiter(this, void 0, void 0, function* () {
-            const newAppointments = {};
             appointments.forEach((appointment) => __awaiter(this, void 0, void 0, function* () {
-                const isAvailable = this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
+                const isAvailable = yield this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
                 if (!isAvailable) {
                     throw new conflict_error_1.ConflictError('Horário já está ocupado.');
                 }
-                newAppointments.push(yield this.appointmentRepository.save(appointment));
+                yield this.appointmentRepository.save(appointment);
             }));
-            return newAppointments;
         });
     }
     editAppointment(id, appointment) {
         return __awaiter(this, void 0, void 0, function* () {
             const olderAppointment = yield this.appointmentRepository.findById(id);
-            if (olderAppointment) {
+            if (!olderAppointment) {
                 throw new not_found_error_1.NotFoundError("Appointment not founded");
             }
             yield this.appointmentRepository.edit(appointment);
@@ -57,7 +69,9 @@ class ScheduleAppointmentUseCase {
     }
     findAppointmentsByDoctor(doctorId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.appointmentRepository.findAppointmentsByDoctor(doctorId);
+            const lista = yield this.appointmentRepository.findAll();
+            const filtered = lista.filter(a => a.doctorId === doctorId);
+            return filtered;
         });
     }
     listeners() {
@@ -65,25 +79,26 @@ class ScheduleAppointmentUseCase {
             this.mq = new mq_1.RabbitMQ();
             yield this.mq.connect();
             yield this.mq.consume('newReserve', (message) => __awaiter(this, void 0, void 0, function* () {
-                const appointment = message.appointment;
-                console.log("Fila newReserve: " + appointment.id);
-                this.reserveAppointment(appointment);
+                const paciente = message.paciente;
+                const idAppointment = message.idAppointment;
+                console.log("Fila newReserve: " + idAppointment);
+                yield this.reserveAppointment(paciente, idAppointment);
             }));
             yield this.mq.consume('newAppointments', (message) => __awaiter(this, void 0, void 0, function* () {
                 const appointments = message.appointments;
                 console.log("Fila newAppointments. Lenght: " + appointments.length);
-                this.newAppointment(appointments);
+                yield this.newAppointment(appointments);
             }));
             yield this.mq.consume('editAppointment', (message) => __awaiter(this, void 0, void 0, function* () {
                 const appointment = message.appointment;
                 const id = message.id;
                 console.log("Fila editAppointment. ID: " + appointment.id);
-                this.editAppointment(id, appointment);
+                yield this.editAppointment(id, appointment);
             }));
             yield this.mq.consume('listAppointment', (message) => __awaiter(this, void 0, void 0, function* () {
-                const id = message.id;
+                const id = message.message.id;
                 console.log("Fila listAppointment. ID: " + id);
-                this.findAppointmentsByDoctor(id);
+                yield this.mq.publishReply(message.replyTo, yield this.findAppointmentsByDoctor(id), message.correlationId);
             }));
         });
     }

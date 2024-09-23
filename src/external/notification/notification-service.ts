@@ -20,7 +20,7 @@ export class EmailNotificationService {
     const message = `Olá, Dr. ${doctorName}!\n\nVocê tem uma nova consulta marcada!\n\nPaciente: ${patientName}.\nData e horário: ${appointmentDate}.`;
 
     const subscribeParams = {
-      TopicArn: "arn:aws:sns:us-east-1:477520350695:teste",
+      TopicArn: (process.env.SNS_ARN) as string,
       Protocol: "email",
       Endpoint: doctorEmail, // Endereço de e-mail do médico
       ReturnSubscriptionArn: true
@@ -30,7 +30,7 @@ export class EmailNotificationService {
       Message: message,
       Subject: 'Health&Med - Nova consulta agendada',
       MessageStructure: message,
-      TopicArn: "arn:aws:sns:us-east-1:477520350695:teste", // Não é necessário o ARN do tópico
+      TopicArn: (process.env.SNS_ARN) as string,
     };
 
 

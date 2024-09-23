@@ -12,7 +12,10 @@ import { Paciente } from '../entities/paciente';
 export class ScheduleAppointmentUseCase {
   constructor(
     private appointmentRepository: AppointmentRepository, private emailNotificationService: EmailNotificationService, private mq: RabbitMQ
-  ) { }
+  ) {
+    console.log("Listernes");
+    this.listeners();
+  }
 
   async reserveAppointment(paciente: Paciente, idAppointment: string) {
 
@@ -20,6 +23,7 @@ export class ScheduleAppointmentUseCase {
     if (!appointment) {
       throw new NotFoundError("Appointment not founded");
     }
+
     const isAvailable = await this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
 
     if (!isAvailable) {
@@ -33,21 +37,21 @@ export class ScheduleAppointmentUseCase {
       this.mq = new RabbitMQ();
       await this.mq.connect();
       console.log("Publicado getDoctor");
-      doctor = await this.mq.publishExclusive('getDoctor', {id: appointment.doctorId}) as unknown as Doctor;
-      await this.mq.close();      
+      doctor = await this.mq.publishExclusive('getDoctor', { id: appointment.doctorId }) as unknown as Doctor;
+      await this.mq.close();
     }
     catch (ConflictError) {
       throw new Error("Erro ao publicar mensagem");
     }
 
-    this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
+   // this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
 
   }
 
   async newAppointment(appointments: Appointment[]) {
     appointments.forEach(async appointment => {
       const isAvailable = await this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
-      if (isAvailable) {
+      if (!isAvailable) {
         throw new ConflictError('Horário já está ocupado.');
       }
       await this.appointmentRepository.save(appointment);
@@ -89,6 +93,7 @@ export class ScheduleAppointmentUseCase {
       await this.editAppointment(id, appointment);
     });
     await this.mq.consume('listAppointment', async (message: any) => {
+      await this.mq.connect();
       const id: string = message.message.id;
       console.log("Fila listAppointment. ID: " + id);
       await this.mq.publishReply(message.replyTo, await this.findAppointmentsByDoctor(id), message.correlationId);

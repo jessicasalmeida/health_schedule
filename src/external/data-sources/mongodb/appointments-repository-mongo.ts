@@ -9,8 +9,9 @@ export class AppointmentRepositoryImpl implements AppointmentRepository {
     return savedAppointment as unknown as Appointment;
   }
 
+  
   async findById(id: string): Promise<Appointment> {
-    const query = { id: (id)};
+    const query = {id:id};
     const savedAppointment = await collections.appointment?.findOne(query);
     return savedAppointment as unknown as Appointment;
   }

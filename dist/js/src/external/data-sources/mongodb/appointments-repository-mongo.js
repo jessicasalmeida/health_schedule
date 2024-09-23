@@ -22,7 +22,7 @@ class AppointmentRepositoryImpl {
     findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const query = { appointmentId: (id) };
+            const query = { id: id };
             const savedAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.findOne(query));
             return savedAppointment;
         });
@@ -30,8 +30,8 @@ class AppointmentRepositoryImpl {
     edit(appointment) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const query = { appointmentId: (appointment.id) };
-            const savedAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.updateOne(query, appointment));
+            const query = { id: (appointment.id) };
+            const savedAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.updateOne(query, { $set: appointment }));
             return savedAppointment;
         });
     }
@@ -54,6 +54,12 @@ class AppointmentRepositoryImpl {
             const query = { doctorId: (doctorId) };
             const appointments = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.find(query));
             return appointments;
+        });
+    }
+    findAll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.find({}).toArray());
         });
     }
 }
