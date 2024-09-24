@@ -9,9 +9,9 @@ import { RabbitMQ } from '../../external/mq/mq';
 import { Doctor } from '../entities/doctor';
 import { Paciente } from '../entities/paciente';
 
+
 export class ScheduleAppointmentUseCase {
-  constructor(
-    private appointmentRepository: AppointmentRepository, private emailNotificationService: EmailNotificationService, private mq: RabbitMQ
+  constructor(private appointmentRepository: AppointmentRepository, private emailNotificationService: EmailNotificationService, private mq: RabbitMQ
   ) {
     console.log("Listernes");
     this.listeners();
@@ -43,8 +43,7 @@ export class ScheduleAppointmentUseCase {
     catch (ConflictError) {
       throw new Error("Erro ao publicar mensagem");
     }
-
-   // this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
+    this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
 
   }
 

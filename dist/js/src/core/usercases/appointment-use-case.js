@@ -96,6 +96,7 @@ class ScheduleAppointmentUseCase {
                 yield this.editAppointment(id, appointment);
             }));
             yield this.mq.consume('listAppointment', (message) => __awaiter(this, void 0, void 0, function* () {
+                yield this.mq.connect();
                 const id = message.message.id;
                 console.log("Fila listAppointment. ID: " + id);
                 yield this.mq.publishReply(message.replyTo, yield this.findAppointmentsByDoctor(id), message.correlationId);

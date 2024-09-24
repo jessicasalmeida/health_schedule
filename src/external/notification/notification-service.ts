@@ -1,54 +1,40 @@
-import AWS from 'aws-sdk';
-import { UnsubscribeInput } from 'aws-sdk/clients/sns';
+import nodemailer from 'nodemailer'
 import * as dotenv from "dotenv";
-
-// Carregar variáveis de ambiente
-dotenv.config();
-
-// Configurando o SNS com as credenciais e região AWS
-AWS.config.update({
-  region: process.env.AWS_REGION, // Ex: 'us-east-1'
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  sessionToken: process.env.AWS_SESSION_TOKEN,
-});
-
-const sns = new AWS.SNS({ apiVersion: '2010-03-31' });
-
+interface ISendMail {
+  to: string
+  subject: string
+  message: string
+}
 export class EmailNotificationService {
+  // logic for sending emails will go here
+
   async notifyDoctor(doctorEmail: string, doctorName: string, patientName: string, appointmentDate: Date): Promise<void> {
+    dotenv.config();
     const message = `Olá, Dr. ${doctorName}!\n\nVocê tem uma nova consulta marcada!\n\nPaciente: ${patientName}.\nData e horário: ${appointmentDate}.`;
+    {
+      var transporter = nodemailer.createTransport({
+        host: 'mail.smtp2go.com',
+        port: 2525,
+        auth: {
+          user: process.env.GOOGLE_MAIL_APP_EMAIL,
+          pass: process.env.GOOGLE_MAIL_APP_PASSWORD,
+        }
+      });
 
-    const subscribeParams = {
-      TopicArn: (process.env.SNS_ARN) as string,
-      Protocol: "email",
-      Endpoint: doctorEmail, // Endereço de e-mail do médico
-      ReturnSubscriptionArn: true
-    };
+      var mailOptions = {
+        from: "jessica.almeida@cpspos.sp.gov.br",
+        to: doctorEmail,
+        subject: "Consulta Agendada Fiap",
+        html: message,
+      };
 
-    const params = {
-      Message: message,
-      Subject: 'Health&Med - Nova consulta agendada',
-      MessageStructure: message,
-      TopicArn: (process.env.SNS_ARN) as string,
-    };
-
-
-
-    try {
-      const subscribePromise = await sns.subscribe(subscribeParams).promise();
-      console.log("Subscription ARN is " + subscribePromise.SubscriptionArn);
-
-      const result = await sns.publish(params).promise();
-      //await sns.unsubscribe(unsubscribe);
-      console.log('Notificação enviada via SNS:', result.MessageId);
-
-      const unsubscribe = await sns.unsubscribe({ SubscriptionArn: subscribePromise.SubscriptionArn!.toString() }).promise();
-      console.log("Subscription ARN is " + subscribePromise.SubscriptionArn);
-
-    } catch (error) {
-      console.error('Erro ao enviar notificação por e-mail via SNS:', error);
-      throw new Error('Erro ao enviar notificação por e-mail');
+      try {
+        await transporter.sendMail(mailOptions)
+        console.log("Email enviado")
+      } catch (error) {
+        console.error("error sending email ", error)
+      }
     }
+
   }
 }
