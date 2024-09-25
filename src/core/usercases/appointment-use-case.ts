@@ -23,14 +23,13 @@ export class ScheduleAppointmentUseCase {
     if (!appointment) {
       throw new NotFoundError("Appointment not founded");
     }
-
-    const isAvailable = await this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
-
-    if (!isAvailable) {
+    console.log(appointment.status);
+    if (!appointment.status) {
       throw new ConflictError('Horário já está ocupado.');
     }
 
     appointment.patientId = paciente._id;
+    appointment.status = true;
     await this.appointmentRepository.edit(appointment);
     let doctor;
     try {
@@ -44,18 +43,21 @@ export class ScheduleAppointmentUseCase {
       throw new Error("Erro ao publicar mensagem");
     }
     this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
-
   }
 
   async newAppointment(appointments: Appointment[]) {
-    appointments.forEach(async appointment => {
-      const isAvailable = await this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
+    
+    for (const appointment of appointments) {
+      appointment.date = parseDate((appointment.date).toString());
+      
+      const isAvailable = await this.appointmentRepository.findAppointmentsByDate(appointment.doctorId, appointment.date);
       if (!isAvailable) {
         throw new ConflictError('Horário já está ocupado.');
       }
       await this.appointmentRepository.save(appointment);
-    });
+    }
   }
+
 
   async editAppointment(id: string, appointment: Appointment) {
     const olderAppointment = await this.appointmentRepository.findById(id);
@@ -71,6 +73,7 @@ export class ScheduleAppointmentUseCase {
     return filtered;
   }
 
+
   async listeners(): Promise<void> {
     this.mq = new RabbitMQ();
     await this.mq.connect();
@@ -81,11 +84,15 @@ export class ScheduleAppointmentUseCase {
       await this.reserveAppointment(paciente, idAppointment);
     });
     await this.mq.consume('newAppointments', async (message: any) => {
+      this.mq = new RabbitMQ();
+      await this.mq.connect();
       const appointments: Appointment[] = message.appointments;
       console.log("Fila newAppointments. Lenght: " + appointments.length);
       await this.newAppointment(appointments);
     });
     await this.mq.consume('editAppointment', async (message: any) => {
+      this.mq = new RabbitMQ();
+      await this.mq.connect();
       const appointment: Appointment = message.appointment;
       const id: string = message.id;
       console.log("Fila editAppointment. ID: " + appointment.id);
@@ -98,4 +105,13 @@ export class ScheduleAppointmentUseCase {
       await this.mq.publishReply(message.replyTo, await this.findAppointmentsByDoctor(id), message.correlationId);
     });
   }
+}
+
+function parseDate(dateString: string): Date {
+  const [datePart, timePart] = dateString.split(' ');
+  const [day, month, year] = datePart.split('/').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  
+  // O mês é 0-indexado (Janeiro é 0)
+  return new Date(year, month - 1, day, hours, minutes);
 }
