@@ -12,11 +12,8 @@ ENV DB_NAME="payment"
 ENV APPOINTMENT_COLLECTION_NAME="payment"
 ENV URL="http://localhost:8000"
 ENV MQ_CONN_STRING="mq"
-ENV AWS_ACCESS_KEY_ID="access_key"
-ENV AWS_SECRET_ACCESS_KEY="secret"
-ENV AWS_SESSION_TOKEN="token"
-ENV AWS_REGION="region"
-ENV SNS_ARN="sns_arn"
+ENV GOOGLE_MAIL_APP_EMAIL="app_email"
+ENV GOOGLE_MAIL_APP_PASSWORD="app_password"
 
 COPY ./dist/ /usr/src/app/dist
 COPY .env /usr/src/app

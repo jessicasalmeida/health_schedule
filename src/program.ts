@@ -5,7 +5,7 @@ import { ScheduleAppointmentUseCase } from "./core/usercases/appointment-use-cas
 import { RabbitMQ } from "./external/mq/mq";
 import { EmailNotificationService } from "./external/notification/notification-service";
 
-const port = 8001;
+const port = 8000;
 const mq = new RabbitMQ();
 const repository = new AppointmentRepositoryImpl();
 const notification = new EmailNotificationService();
