@@ -31,43 +31,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmailNotificationService = void 0;
-const nodemailer_1 = __importDefault(require("nodemailer"));
-const dotenv = __importStar(require("dotenv"));
-class EmailNotificationService {
-    // logic for sending emails will go here
-    notifyDoctor(doctorEmail, doctorName, patientName, appointmentDate) {
-        return __awaiter(this, void 0, void 0, function* () {
-            dotenv.config();
-            const message = `Olá, Dr. ${doctorName}!\n\nVocê tem uma nova consulta marcada!\n\nPaciente: ${patientName}.\nData e horário: ${appointmentDate}.`;
-            {
-                var transporter = nodemailer_1.default.createTransport({
-                    host: 'mail.smtp2go.com',
-                    port: 2525,
-                    auth: {
-                        user: process.env.GOOGLE_MAIL_APP_EMAIL,
-                        pass: process.env.GOOGLE_MAIL_APP_PASSWORD,
-                    }
-                });
-                var mailOptions = {
-                    from: "jessica.almeida@cpspos.sp.gov.br",
-                    to: doctorEmail,
-                    subject: "Consulta Agendada Fiap",
-                    html: message,
-                };
-                try {
-                    yield transporter.sendMail(mailOptions);
-                    console.log("Email enviado");
-                }
-                catch (error) {
-                    console.error("error sending email ", error);
-                }
-            }
-        });
-    }
-}
-exports.EmailNotificationService = EmailNotificationService;
+exports.router = void 0;
+const express_1 = __importStar(require("express"));
+const mq_1 = require("../../mq/mq");
+const appointments_repository_mongo_1 = require("../../data-sources/mongodb/appointments-repository-mongo");
+const notification_service_1 = require("../../notification/notification-service");
+const appointment_use_case_1 = require("../../../core/usercases/appointment-use-case");
+const schedule_controller_1 = require("../../../operation/controllers/schedule-controller");
+const mq = new mq_1.RabbitMQ();
+const repository = new appointments_repository_mongo_1.AppointmentRepositoryImpl();
+const notification = new notification_service_1.EmailNotificationService();
+const useCase = new appointment_use_case_1.ScheduleAppointmentUseCase(repository, notification, mq);
+const controller = new schedule_controller_1.ScheduleController(useCase);
+exports.router = (0, express_1.Router)();
+exports.router.use(express_1.default.json());
+exports.router.post('/reserve', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    /*  #swagger.tags = ['Doctor']
+        #swagger.summary = 'Create'
+        #swagger.description = 'Endpoint to create a doctor' */
+    const order = yield controller.reserve(req, res);
+}));

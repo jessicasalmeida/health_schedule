@@ -46,16 +46,22 @@ export class ScheduleAppointmentUseCase {
   }
 
   async newAppointment(appointments: Appointment[]) {
-    
+    this.mq = new RabbitMQ();
+    await this.mq.connect();
+
     for (const appointment of appointments) {
       appointment.date = parseDate((appointment.date).toString());
-      
-      const isAvailable = await this.appointmentRepository.findAppointmentsByDate(appointment.doctorId, appointment.date);
-      if (!isAvailable) {
-        throw new ConflictError('Horário já está ocupado.');
+
+      const listAppointments = await this.findAppointmentsByDoctor(appointment.doctorId);
+
+      const conflictItem = listAppointments.filter(a => appointment.date >= a.date && appointment.date <= new Date(a.date.getTime() + 1800000));
+
+      if (conflictItem.length > 0) {
+        return false;
       }
       await this.appointmentRepository.save(appointment);
     }
+    return true;
   }
 
 
@@ -86,9 +92,12 @@ export class ScheduleAppointmentUseCase {
     await this.mq.consume('newAppointments', async (message: any) => {
       this.mq = new RabbitMQ();
       await this.mq.connect();
-      const appointments: Appointment[] = message.appointments;
+      const appointments: Appointment[] = message.message.appointments;
       console.log("Fila newAppointments. Lenght: " + appointments.length);
-      await this.newAppointment(appointments);
+      const resposta = await this.newAppointment(appointments);
+      console.log(resposta);
+      await this.mq.publishReply(message.replyTo, resposta, message.correlationId);
+
     });
     await this.mq.consume('editAppointment', async (message: any) => {
       this.mq = new RabbitMQ();
@@ -111,7 +120,7 @@ function parseDate(dateString: string): Date {
   const [datePart, timePart] = dateString.split(' ');
   const [day, month, year] = datePart.split('/').map(Number);
   const [hours, minutes] = timePart.split(':').map(Number);
-  
+
   // O mês é 0-indexado (Janeiro é 0)
   return new Date(year, month - 1, day, hours, minutes);
 }

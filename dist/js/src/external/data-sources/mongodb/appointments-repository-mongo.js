@@ -35,17 +35,23 @@ class AppointmentRepositoryImpl {
             return savedAppointment;
         });
     }
-    isAvailable(doctorId, date) {
+    findAppointmentsByDate(doctorId, date) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const query = { doctorId: (doctorId), date: (date), status: true };
-            const conflictingAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.findOne(query));
-            if (conflictingAppointment == null) {
-                return true;
-            }
-            else {
-                return false;
-            }
+            const start = date;
+            const end = new Date(date);
+            console.log(start);
+            end.setMinutes(end.getMinutes() + 30); // Define o final do intervalo como 30 minutos após o início
+            console.log(end);
+            // Verifica se há algum agendamento que se sobrepõe ao intervalo desejado
+            const conflict = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.findOne({
+                doctorId: doctorId,
+                date: {
+                    $lt: end, // Horários com início antes do final desejado
+                    $gte: start // Horários com início no mesmo intervalo ou posterior
+                }
+            }));
+            return !conflict;
         });
     }
     findAppointmentsByDoctor(doctorId) {

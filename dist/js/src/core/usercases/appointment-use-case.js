@@ -27,11 +27,12 @@ class ScheduleAppointmentUseCase {
             if (!appointment) {
                 throw new not_found_error_1.NotFoundError("Appointment not founded");
             }
-            const isAvailable = yield this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
-            if (!isAvailable) {
+            console.log(appointment.status);
+            if (!appointment.status) {
                 throw new conflict_error_1.ConflictError('Horário já está ocupado.');
             }
             appointment.patientId = paciente._id;
+            appointment.status = true;
             yield this.appointmentRepository.edit(appointment);
             let doctor;
             try {
@@ -44,18 +45,20 @@ class ScheduleAppointmentUseCase {
             catch (ConflictError) {
                 throw new Error("Erro ao publicar mensagem");
             }
-            // this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
+            this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
         });
     }
     newAppointment(appointments) {
         return __awaiter(this, void 0, void 0, function* () {
-            appointments.forEach((appointment) => __awaiter(this, void 0, void 0, function* () {
-                const isAvailable = yield this.appointmentRepository.isAvailable(appointment.doctorId, appointment.date);
-                if (!isAvailable) {
+            for (const appointment of appointments) {
+                appointment.date = parseDate((appointment.date).toString());
+                const listAppointments = yield this.findAppointmentsByDoctor(appointment.doctorId);
+                const conflictItem = listAppointments.filter(a => appointment.date >= a.date && appointment.date <= new Date(a.date.setMinutes(30)));
+                if (conflictItem.length > 0) {
                     throw new conflict_error_1.ConflictError('Horário já está ocupado.');
                 }
                 yield this.appointmentRepository.save(appointment);
-            }));
+            }
         });
     }
     editAppointment(id, appointment) {
@@ -85,11 +88,15 @@ class ScheduleAppointmentUseCase {
                 yield this.reserveAppointment(paciente, idAppointment);
             }));
             yield this.mq.consume('newAppointments', (message) => __awaiter(this, void 0, void 0, function* () {
+                this.mq = new mq_1.RabbitMQ();
+                yield this.mq.connect();
                 const appointments = message.appointments;
                 console.log("Fila newAppointments. Lenght: " + appointments.length);
                 yield this.newAppointment(appointments);
             }));
             yield this.mq.consume('editAppointment', (message) => __awaiter(this, void 0, void 0, function* () {
+                this.mq = new mq_1.RabbitMQ();
+                yield this.mq.connect();
                 const appointment = message.appointment;
                 const id = message.id;
                 console.log("Fila editAppointment. ID: " + appointment.id);
@@ -105,3 +112,10 @@ class ScheduleAppointmentUseCase {
     }
 }
 exports.ScheduleAppointmentUseCase = ScheduleAppointmentUseCase;
+function parseDate(dateString) {
+    const [datePart, timePart] = dateString.split(' ');
+    const [day, month, year] = datePart.split('/').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    // O mês é 0-indexado (Janeiro é 0)
+    return new Date(year, month - 1, day, hours, minutes);
+}

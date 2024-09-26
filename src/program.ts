@@ -1,19 +1,13 @@
 import app from "./server";
 import { connectToDataBase } from "./external/data-sources/mongodb/db-connect";
-import { AppointmentRepositoryImpl } from "./external/data-sources/mongodb/appointments-repository-mongo";
-import { ScheduleAppointmentUseCase } from "./core/usercases/appointment-use-case";
-import { RabbitMQ } from "./external/mq/mq";
-import { EmailNotificationService } from "./external/notification/notification-service";
+import { router } from "./external/api/routers/schedule-router";
 
-const port = 8000;
-const mq = new RabbitMQ();
-const repository = new AppointmentRepositoryImpl();
-const notification = new EmailNotificationService();
-const useCase = new ScheduleAppointmentUseCase(repository,notification, mq);
+const port = 8003;
 
 connectToDataBase()
     .then(()=> {
         app.listen(port, () => {
+            app.use('/', router);
             console.log(`Server is listening on port: ${port}`)
         });
     })
