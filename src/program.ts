@@ -1,13 +1,13 @@
 import app from "./server";
 import { connectToDataBase } from "./external/data-sources/mongodb/db-connect";
-import { router } from "./external/api/routers/schedule-router";
+import { routes } from "./external/api/routers";
 
-const port = 8003;
+const port = 8000;
 
 connectToDataBase()
     .then(()=> {
         app.listen(port, () => {
-            app.use('/', router);
+            app.use('/', routes);
             console.log(`Server is listening on port: ${port}`)
         });
     })
