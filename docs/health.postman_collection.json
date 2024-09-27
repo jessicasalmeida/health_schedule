@@ -1,0 +1,404 @@
+{
+	"info": {
+		"_postman_id": "420c3edc-c40a-45b7-a77b-f7e910a8c71d",
+		"name": "health",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32326517"
+	},
+	"item": [
+		{
+			"name": "doctor",
+			"item": [
+				{
+					"name": "newDoctor",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenmedico}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": " {\r\n        \"_id\": \"006\",\r\n        \"name\": \"Jessica\",\r\n        \"cpf\": \"000.000.000-00\",\r\n        \"crm\": \"123456789\",\r\n        \"email\": \"jessicasalmeida4@hotmail.com\",\r\n        \"password\": \"Techchallenge@24\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{uri}}/doctor/",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"doctor",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "schedule",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenmedico}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": " [{\r\n        \"id\": \"001\",\r\n        \"doctorId\": \"001\",\r\n        \"patientId\": \"\",\r\n        \"date\": \"23/09/2024 11:31\",\r\n        \"status\": \"false\"\r\n}]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{uri}}/doctor/schedule",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"doctor",
+								"schedule"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "editSchedule",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenmedico}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": " {\r\n        \"id\": \"001\",\r\n        \"doctorId\": \"001\",\r\n        \"patientId\": \"\",\r\n        \"date\": \"23/09/2024 10:30\",\r\n        \"status\": \"true\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{uri}}/doctor/editSchedule/001",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"doctor",
+								"editSchedule",
+								"001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "appointments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenmedico}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{uri}}/doctor/appointments/001",
+							"host": [
+								"{{uri}}"
+							],
+							"path": [
+								"doctor",
+								"appointments",
+								"001"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "paciente",
+			"item": [
+				{
+					"name": "newPaciente",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenpaciente}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": " {\r\n        \"_id\": \"001\",\r\n        \"name\": \"Jessica\",\r\n        \"cpf\": \"000.000.000-00\",\r\n        \"email\": \"jessicasalmeida@hotmail.com\",\r\n        \"password\": \"123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{uripaciente}}/paciente/",
+							"host": [
+								"{{uripaciente}}"
+							],
+							"path": [
+								"paciente",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "listDoctors",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenpaciente}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{uripaciente}}/paciente/listDoctors",
+							"host": [
+								"{{uripaciente}}"
+							],
+							"path": [
+								"paciente",
+								"listDoctors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "appointments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenpaciente}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{uripaciente}}/paciente/appointments/001",
+							"host": [
+								"{{uripaciente}}"
+							],
+							"path": [
+								"paciente",
+								"appointments",
+								"001"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reserve",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{tokenpaciente}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{uripaciente}}/paciente/reserve?idPaciente=001&idAppointment=001",
+							"host": [
+								"{{uripaciente}}"
+							],
+							"path": [
+								"paciente",
+								"reserve"
+							],
+							"query": [
+								{
+									"key": "idPaciente",
+									"value": "001"
+								},
+								{
+									"key": "idAppointment",
+									"value": "001"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "login",
+			"item": [
+				{
+					"name": "loginpaciente",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"paciente\",\r\n    \"password\": \"Fase!324\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{urilogin}}/loginpaciente",
+							"host": [
+								"{{urilogin}}"
+							],
+							"path": [
+								"loginpaciente"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "loginmedico",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"jessicasalmeida4@hotmail.com\",\r\n    \"password\": \"Techchallenge@24\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{uriapi}}/loginmedico",
+							"host": [
+								"{{uriapi}}"
+							],
+							"path": [
+								"loginmedico"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "uri",
+			"value": "localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "uripaciente",
+			"value": "localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "urilogin",
+			"value": "https://a6gaqn17ab.execute-api.us-east-1.amazonaws.com",
+			"type": "string"
+		},
+		{
+			"key": "tokenmedico",
+			"value": "eyJraWQiOiJuNHgzVzlFMWxLOGNxOHpzV1ZKOThXYWtraVNWNko0UGdzYm02Zk5paTRzPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI0NGI4YTQ3OC1lMDMxLTcwMDItNGI5YS1lOGI1Y2MzMGM5OWIiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9BY1k1OFlzWXgiLCJjbGllbnRfaWQiOiI0am1nOTA3MHBuajR0bzQza3A0MWV2N2dsOSIsIm9yaWdpbl9qdGkiOiJhZTI0ZGZlNi1iODNhLTRjM2QtOTYzMy01OWZkNGMwNWY1MTQiLCJldmVudF9pZCI6ImI4YjdiOTE4LTI1MTctNGQyMS05N2RjLTU4M2ZlYzZjNDg0ZCIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4iLCJhdXRoX3RpbWUiOjE3MjcwMjQ4MDAsImV4cCI6MTcyNzAyODQwMCwiaWF0IjoxNzI3MDI0ODAwLCJqdGkiOiJlZWY1NTU1MC04ZGUyLTQwZjYtYjI4NS02YTRkN2E4ZjVhODQiLCJ1c2VybmFtZSI6Im1lZGljbyJ9.QCaxybzUcx3IPxyiLNiEXudb8mewXG3TRC-RILeU33DX548j2o9NulL-0vie0NLPl1Lgj7AcgA_vFTwcm-QwteY3XliuoPpN1UacDIbJBJllWZEnwis5uYQaI5z0X87_Tgl1Rv7CgrzTeBmX_3iZ56IwYLI29Ff8ozL-swUg3IPEX5nKrZgHHW0LDtW2hzo2Kj05QYBdS1e2qoVChV_hX5l_5UDm6ACmrlgfpjFWlCJqSApBvGB_vZr7jWvQIz36ncHU4h12cA7SIU2h8RSP1M5Mi1lbr9QKwYiqpnXMw5nd-gy_uRA98ESacSmDGgsmz5drv_XsMdXpqP6ykP_k2A",
+			"type": "string"
+		},
+		{
+			"key": "tokenpaciente",
+			"value": "eyJraWQiOiJIYm5lbWVNdGg3WjZvd0dLUUZUSFVjMlRQN0NyaUFpY1IzSmI2b1o3NHg0PSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI2NDc4ZjQzOC04MDYxLTcwMTQtNGMxZC1lNWI0M2JlOTczNDciLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9IbEZodDFhZjgiLCJjbGllbnRfaWQiOiJkcmw0Y3NyMXFlbDlsZjY0cmwzZzgydm0wIiwib3JpZ2luX2p0aSI6ImEwMzk2OTJjLWZhMGQtNGZkZi1iNDdjLTY2MGRjYjhjMWQ2YiIsImV2ZW50X2lkIjoiMjQ2YzM3YTEtMjFkMy00MmRhLWFmYmYtMDg2YjNjYjkwMjFiIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTcyNzAyNjQwMywiZXhwIjoxNzI3MDMwMDAzLCJpYXQiOjE3MjcwMjY0MDMsImp0aSI6ImMwNGVlZWU3LWQ2ZWUtNGZiYy1hYTViLTNlMThmNmJiMDNlMiIsInVzZXJuYW1lIjoicGFjaWVudGUifQ.lHag4M15XOf0bjZbUUbLLLqEr_y_GnSbR3J5wtEqnhyh0KUib5ru7udnkjo3-TnXDZeQT-jzGuN129U59WLnJlfzjqCrgvLXoiqcmnJNIfBHYdRBNdjg--INggMnh8wHDO5J-8g_1vSt5AbW5EL9h8v1f1FX1F4x-5DuShWAW5C7CnTKyhlFWQiWlY2k-tWSsVRev-3oXRuDRc0l1v-t6_RmOPKu8zK-XccreM8FR_9z8KdVGJPymTnzqSJKhv6uNZTiMlm4RD-22kORYtJrrOB5zOEZRP4ks9Qsoj4De9jwd6ErFePPpiCIioIQreYmc4diLZ3oDHRTAlJLS8a3sw",
+			"type": "string"
+		},
+		{
+			"key": "uriapi",
+			"value": "https://r4fym4wi23.execute-api.us-east-1.amazonaws.com",
+			"type": "string"
+		}
+	]
+}
