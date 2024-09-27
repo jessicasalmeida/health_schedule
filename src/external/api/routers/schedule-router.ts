@@ -1,14 +1,16 @@
 import express, { Router } from "express";
 
 import { RabbitMQ } from "../../mq/mq";
-import { AppointmentRepositoryImpl } from "../../data-sources/mongodb/appointments-repository-mongo";
+import { AppointmentRepositoryImpl } from '../../data-sources/mongodb/appointments-repository-mongo';
 import { EmailNotificationService } from "../../notification/notification-service";
 import { ScheduleAppointmentUseCase } from "../../../core/usercases/appointment-use-case";
 import { ScheduleController } from "../../../operation/controllers/schedule-controller";
+import { Gateway } from '../../../operation/gateway/gateway';
 const mq = new RabbitMQ();
 const repository = new AppointmentRepositoryImpl();
 const notification = new EmailNotificationService();
-const useCase = new ScheduleAppointmentUseCase(repository,notification, mq);
+const gateway = new Gateway(repository);
+const useCase = new ScheduleAppointmentUseCase(gateway, notification, mq);
 const controller = new ScheduleController(useCase);
 
 export const router = Router();

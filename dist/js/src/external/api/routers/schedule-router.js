@@ -39,10 +39,12 @@ const appointments_repository_mongo_1 = require("../../data-sources/mongodb/appo
 const notification_service_1 = require("../../notification/notification-service");
 const appointment_use_case_1 = require("../../../core/usercases/appointment-use-case");
 const schedule_controller_1 = require("../../../operation/controllers/schedule-controller");
+const gateway_1 = require("../../../operation/gateway/gateway");
 const mq = new mq_1.RabbitMQ();
 const repository = new appointments_repository_mongo_1.AppointmentRepositoryImpl();
 const notification = new notification_service_1.EmailNotificationService();
-const useCase = new appointment_use_case_1.ScheduleAppointmentUseCase(repository, notification, mq);
+const gateway = new gateway_1.Gateway(repository);
+const useCase = new appointment_use_case_1.ScheduleAppointmentUseCase(gateway, notification, mq);
 const controller = new schedule_controller_1.ScheduleController(useCase);
 exports.router = (0, express_1.Router)();
 exports.router.use(express_1.default.json());

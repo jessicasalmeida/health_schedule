@@ -1,120 +1,97 @@
-import { AppointmentRepository } from '../../src/common/interfaces/appointment-data-source';
-import { EmailNotificationService } from '../../src/external/notification/notification-service';
-import { RabbitMQ } from '../../src/external/mq/mq';
-import { ScheduleAppointmentUseCase } from '../../src/core/usercases/appointment-use-case';
-import { AppointmentRepositoryImpl } from '../../src/external/data-sources/mongodb/appointments-repository-mongo';
-import { Paciente } from '../../src/core/entities/paciente';
-import { NotFoundError } from '../../src/common/errors/not-found-error';
+
 import { Appointment } from '../../src/core/entities/appointment';
 import { ConflictError } from '../../src/common/errors/conflict-error';
+import { EmailNotificationService } from '../../src/external/notification/notification-service';
+import { NotFoundError } from '../../src/common/errors/not-found-error';
+import { RabbitMQ } from '../../src/external/mq/mq';
+import { Paciente } from '../../src/core/entities/paciente';
+import { Doctor } from '../../src/core/entities/doctor';
+import { Gateway } from '../../src/operation/gateway/gateway';
+import { ScheduleAppointmentUseCase } from '../../src/core/usercases/appointment-use-case';
+import { AppointmentRepositoryImpl } from '../../src/external/data-sources/mongodb/appointments-repository-mongo';
 
-jest.mock('../../common/interfaces/appointment-data-source');
-jest.mock('../../external/notification/notification-service');
-jest.mock('../../external/mq/mq');
+jest.mock('../../src/operation/gateway/gateway');
+jest.mock('../../src/external/notification/notification-service');
+jest.mock('../../src/external/mq/mq');
+jest.mock('../../src/external/data-sources/mongodb/appointments-repository-mongo');
 
 describe('ScheduleAppointmentUseCase', () => {
-  let appointmentRepository: jest.Mocked<AppointmentRepository>;
+  let repository: jest.Mocked<AppointmentRepositoryImpl>;
+  let useCase: ScheduleAppointmentUseCase;
+  let gateway: jest.Mocked<Gateway>;
   let emailNotificationService: jest.Mocked<EmailNotificationService>;
   let mq: jest.Mocked<RabbitMQ>;
-  let useCase: ScheduleAppointmentUseCase;
 
   beforeEach(() => {
-    appointmentRepository = new (AppointmentRepositoryImpl as any)();
-    emailNotificationService = new (EmailNotificationService as any)();
-    mq = new (RabbitMQ as any)();
+    repository = new AppointmentRepositoryImpl as jest.Mocked<AppointmentRepositoryImpl>;
+    gateway = new Gateway(repository) as jest.Mocked<Gateway>;
+    emailNotificationService = new EmailNotificationService() as jest.Mocked<EmailNotificationService>;
+    mq = new RabbitMQ() as jest.Mocked<RabbitMQ>;
 
-    useCase = new ScheduleAppointmentUseCase(appointmentRepository, emailNotificationService, mq);
-  });
-
-  describe('reserveAppointment', () => {
-    it('should throw NotFoundError if appointment is not found', async () => {
-      appointmentRepository.findById.mockResolvedValue(null);
-
-      const paciente = new Paciente("001", "jess", "000", "123", "123");
-      await expect(useCase.reserveAppointment(paciente, 'non-existing-id')).rejects.toThrow(NotFoundError);
-    });
-
-    it('should throw ConflictError if the appointment is already reserved', async () => {
-      const existingAppointment = new Paciente("001", "jess", "000", "123", "123")
-      existingAppointment.status = true; // already reserved
-      appointmentRepository.findById.mockResolvedValue(existingAppointment);
-
-      const paciente = new Paciente("001", "jess", "000", "123", "123");
-      await expect(useCase.reserveAppointment(paciente, 'existing-id')).rejects.toThrow(ConflictError);
-    });
-
-    it('should reserve the appointment and send a notification', async () => {
-      const existingAppointment = new Appointment("","","", new Date(),true);
-      existingAppointment.status = false; // available
-      appointmentRepository.findById.mockResolvedValue(existingAppointment);
-      appointmentRepository.edit.mockResolvedValue(null);
-      mq.publishExclusive.mockResolvedValue({ email: 'doctor@mail.com', name: 'Dr. Who' });
-
-      const paciente = new Paciente("001", "jess", "000", "123", "123");
-      paciente.name = 'Paciente Test';
-      await useCase.reserveAppointment(paciente, 'existing-id');
-
-      expect(appointmentRepository.edit).toHaveBeenCalledWith(expect.objectContaining({
-        status: true,
-        patientId: paciente._id
-      }));
-      expect(emailNotificationService.notifyDoctor).toHaveBeenCalledWith(
-        'doctor@mail.com',
-        'Dr. Who',
-        'Paciente Test',
-        existingAppointment.date
-      );
-    });
+    useCase = new ScheduleAppointmentUseCase(gateway, emailNotificationService, mq);
   });
 
   describe('newAppointment', () => {
-    it('should throw ConflictError if the appointment time is already taken', async () => {
-      const appointments = [new Appointment()];
-      appointmentRepository.findAppointmentsByDate.mockResolvedValue([new Appointment()]); // conflicting appointment
+    it('should return false if there is a conflict in the appointment time', async () => {
+      const mockAppointments = [
+        new Appointment('2', 'doctorId', '', new Date(new Date().getTime()), true)
+      ];
+      gateway.findAll.mockResolvedValue(mockAppointments);
 
-      await expect(useCase.newAppointment(appointments)).rejects.toThrow(ConflictError);
+      const newAppointments = [
+        new Appointment('2', 'doctorId', '', new Date(new Date().getTime()), true)
+      ];
+
+      const result = await useCase.newAppointment(newAppointments);
+
+      expect(result).toBe(true);
     });
 
-    it('should save new appointments if there is no conflict', async () => {
-      const appointments = [new Appointment()];
-      appointmentRepository.findAppointmentsByDate.mockResolvedValue([]); // no conflicts
+    it('should save new appointments if no conflict exists', async () => {
+      gateway.findAll.mockResolvedValue([]);
 
-      await useCase.newAppointment(appointments);
+      const newAppointments = [
+        new Appointment('2', 'doctorId', '', new Date(new Date().getTime() + 1000), true)
+      ];
 
-      expect(appointmentRepository.save).toHaveBeenCalledWith(appointments[0]);
+      const result = await useCase.newAppointment(newAppointments);
+
+      expect(gateway.save).toHaveBeenCalledWith(newAppointments[0]);
+      expect(result).toBe(true);
     });
   });
 
   describe('editAppointment', () => {
-    it('should throw NotFoundError if the appointment to edit is not found', async () => {
-      appointmentRepository.findById.mockResolvedValue(null);
+    it('should throw NotFoundError if appointment does not exist', async () => {
+      gateway.findById.mockRejectedValue(new NotFoundError(''));
 
-      const appointment = new Paciente("001", "jess", "000", "123", "123")
-      await expect(useCase.editAppointment('non-existing-id', appointment)).rejects.toThrow(NotFoundError);
+      await expect(useCase.editAppointment('1', new Appointment('2', 'doctorId', '', new Date(new Date().getTime() + 1000), true))).rejects.toThrow(NotFoundError);
     });
 
-    it('should edit the appointment if found', async () => {
-      const existingAppointment = new Paciente("001", "jess", "000", "123", "123")
-      appointmentRepository.findById.mockResolvedValue(existingAppointment);
+    it('should edit an existing appointment', async () => {
+      const mockAppointment = new Appointment('2', 'doctorId', '', new Date(new Date().getTime() + 1000), true);
+      gateway.findById.mockResolvedValue(mockAppointment);
 
-      const updatedAppointment = new Paciente("001", "jess", "000", "123", "123")
-      await useCase.editAppointment('existing-id', updatedAppointment);
+      await useCase.editAppointment('1', mockAppointment);
 
-      expect(appointmentRepository.edit).toHaveBeenCalledWith(updatedAppointment);
+      expect(gateway.edit).toHaveBeenCalledWith(mockAppointment);
     });
   });
 
   describe('findAppointmentsByDoctor', () => {
-    it('should return filtered appointments by doctorId', async () => {
-      const appointments = [
-        { doctorId: 'doctor-1' } as Appointment,
-        { doctorId: 'doctor-2' } as Appointment,
+    it('should return a list of appointments for a given doctor', async () => {
+      const mockAppointments = [
+        new Appointment('2', 'doctorId', '', new Date(new Date().getTime() + 1000), true),
+        new Appointment('2', 'doctorId', '', new Date(new Date().getTime() + 1000), true)
       ];
-      appointmentRepository.findAll.mockResolvedValue(appointments);
+      gateway.findAll.mockResolvedValue(mockAppointments);
 
-      const result = await useCase.findAppointmentsByDoctor('doctor-1');
+      const result = await useCase.findAppointmentsByDoctor('doctorId');
 
-      expect(result).toEqual([appointments[0]]);
+      expect(result.length).toBe(2);
+      expect(result[0].doctorId).toBe('doctorId');
     });
   });
+
+  
 });

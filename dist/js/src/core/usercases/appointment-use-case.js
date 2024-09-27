@@ -14,8 +14,8 @@ const conflict_error_1 = require("../../common/errors/conflict-error");
 const not_found_error_1 = require("../../common/errors/not-found-error");
 const mq_1 = require("../../external/mq/mq");
 class ScheduleAppointmentUseCase {
-    constructor(appointmentRepository, emailNotificationService, mq) {
-        this.appointmentRepository = appointmentRepository;
+    constructor(gateway, emailNotificationService, mq) {
+        this.gateway = gateway;
         this.emailNotificationService = emailNotificationService;
         this.mq = mq;
         console.log("Listernes");
@@ -23,7 +23,7 @@ class ScheduleAppointmentUseCase {
     }
     reserveAppointment(paciente, idAppointment) {
         return __awaiter(this, void 0, void 0, function* () {
-            const appointment = yield this.appointmentRepository.findById(idAppointment);
+            const appointment = yield this.gateway.findById(idAppointment);
             if (!appointment) {
                 throw new not_found_error_1.NotFoundError("Appointment not founded");
             }
@@ -33,7 +33,7 @@ class ScheduleAppointmentUseCase {
             }
             appointment.patientId = paciente._id;
             appointment.status = true;
-            yield this.appointmentRepository.edit(appointment);
+            yield this.gateway.edit(appointment);
             let doctor;
             try {
                 this.mq = new mq_1.RabbitMQ();
@@ -50,29 +50,32 @@ class ScheduleAppointmentUseCase {
     }
     newAppointment(appointments) {
         return __awaiter(this, void 0, void 0, function* () {
+            this.mq = new mq_1.RabbitMQ();
+            yield this.mq.connect();
             for (const appointment of appointments) {
                 appointment.date = parseDate((appointment.date).toString());
                 const listAppointments = yield this.findAppointmentsByDoctor(appointment.doctorId);
-                const conflictItem = listAppointments.filter(a => appointment.date >= a.date && appointment.date <= new Date(a.date.setMinutes(30)));
+                const conflictItem = listAppointments.filter(a => appointment.date >= a.date && appointment.date <= new Date(a.date.getTime() + 1800000));
                 if (conflictItem.length > 0) {
-                    throw new conflict_error_1.ConflictError('Horário já está ocupado.');
+                    return false;
                 }
-                yield this.appointmentRepository.save(appointment);
+                yield this.gateway.save(appointment);
             }
+            return true;
         });
     }
     editAppointment(id, appointment) {
         return __awaiter(this, void 0, void 0, function* () {
-            const olderAppointment = yield this.appointmentRepository.findById(id);
+            const olderAppointment = yield this.gateway.findById(id);
             if (!olderAppointment) {
                 throw new not_found_error_1.NotFoundError("Appointment not founded");
             }
-            yield this.appointmentRepository.edit(appointment);
+            yield this.gateway.edit(appointment);
         });
     }
     findAppointmentsByDoctor(doctorId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const lista = yield this.appointmentRepository.findAll();
+            const lista = yield this.gateway.findAll();
             const filtered = lista.filter(a => a.doctorId === doctorId);
             return filtered;
         });
@@ -90,9 +93,11 @@ class ScheduleAppointmentUseCase {
             yield this.mq.consume('newAppointments', (message) => __awaiter(this, void 0, void 0, function* () {
                 this.mq = new mq_1.RabbitMQ();
                 yield this.mq.connect();
-                const appointments = message.appointments;
+                const appointments = message.message.appointments;
                 console.log("Fila newAppointments. Lenght: " + appointments.length);
-                yield this.newAppointment(appointments);
+                const resposta = yield this.newAppointment(appointments);
+                console.log(resposta);
+                yield this.mq.publishReply(message.replyTo, resposta, message.correlationId);
             }));
             yield this.mq.consume('editAppointment', (message) => __awaiter(this, void 0, void 0, function* () {
                 this.mq = new mq_1.RabbitMQ();

@@ -1,17 +1,15 @@
-
-
 import { Appointment } from '../entities/appointment';
-import { AppointmentRepository } from '../../common/interfaces/appointment-data-source';
 import { ConflictError } from '../../common/errors/conflict-error';
 import { EmailNotificationService } from '../../external/notification/notification-service';
 import { NotFoundError } from '../../common/errors/not-found-error';
 import { RabbitMQ } from '../../external/mq/mq';
 import { Doctor } from '../entities/doctor';
 import { Paciente } from '../entities/paciente';
+import { Gateway } from '../../operation/gateway/gateway';
 
 
 export class ScheduleAppointmentUseCase {
-  constructor(private appointmentRepository: AppointmentRepository, private emailNotificationService: EmailNotificationService, private mq: RabbitMQ
+  constructor(private gateway: Gateway, private emailNotificationService: EmailNotificationService, private mq: RabbitMQ
   ) {
     console.log("Listernes");
     this.listeners();
@@ -19,7 +17,7 @@ export class ScheduleAppointmentUseCase {
 
   async reserveAppointment(paciente: Paciente, idAppointment: string) {
 
-    const appointment = await this.appointmentRepository.findById(idAppointment);
+    const appointment = await this.gateway.findById(idAppointment);
     if (!appointment) {
       throw new NotFoundError("Appointment not founded");
     }
@@ -30,7 +28,7 @@ export class ScheduleAppointmentUseCase {
 
     appointment.patientId = paciente._id;
     appointment.status = true;
-    await this.appointmentRepository.edit(appointment);
+    await this.gateway.edit(appointment);
     let doctor;
     try {
       this.mq = new RabbitMQ();
@@ -59,22 +57,22 @@ export class ScheduleAppointmentUseCase {
       if (conflictItem.length > 0) {
         return false;
       }
-      await this.appointmentRepository.save(appointment);
+      await this.gateway.save(appointment);
     }
     return true;
   }
 
 
   async editAppointment(id: string, appointment: Appointment) {
-    const olderAppointment = await this.appointmentRepository.findById(id);
+    const olderAppointment = await this.gateway.findById(id);
     if (!olderAppointment) {
       throw new NotFoundError("Appointment not founded");
     }
-    await this.appointmentRepository.edit(appointment);
+    await this.gateway.edit(appointment);
   }
 
   async findAppointmentsByDoctor(doctorId: string) {
-    const lista = await this.appointmentRepository.findAll();
+    const lista = await this.gateway.findAll();
     const filtered = lista.filter(a => a.doctorId === doctorId);
     return filtered;
   }
