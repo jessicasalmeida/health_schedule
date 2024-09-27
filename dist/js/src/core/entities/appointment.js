@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Appointment = void 0;
 class Appointment {
-    constructor(id, doctorId, patientId, date, status) {
-        this.id = id;
+    constructor(_id, doctorId, patientId, date, status) {
+        this._id = _id;
         this.doctorId = doctorId;
         this.patientId = patientId;
         this.date = date;

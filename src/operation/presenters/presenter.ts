@@ -6,7 +6,7 @@ export class Presenter {
         presenter: Appointment
     ): Appointment {
         let dto: AppointmentDTO = {
-            id: presenter.id,
+            _id: presenter._id,
             doctorId: presenter.doctorId,
             patientId: presenter.patientId,
             date: presenter.date,

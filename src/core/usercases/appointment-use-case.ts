@@ -17,30 +17,33 @@ export class ScheduleAppointmentUseCase {
 
   async reserveAppointment(paciente: Paciente, idAppointment: string) {
 
-    const appointment = await this.gateway.findById(idAppointment);
-    if (!appointment) {
+    const appointment = await this.gateway.findAll();
+    const app = appointment.filter(a => (a._id).toString() === idAppointment);
+    if (!app) {
       throw new NotFoundError("Appointment not founded");
     }
-    console.log(appointment.status);
-    if (!appointment.status) {
+    console.log(app[0].status);
+    if (app[0].status == true) {
       throw new ConflictError('Horário já está ocupado.');
     }
 
-    appointment.patientId = paciente._id;
-    appointment.status = true;
-    await this.gateway.edit(appointment);
+    app[0].patientId = paciente._id;
+    app[0].status = true;
+    console.log('edita');
+    await this.gateway.edit(app[0]);
+    console.log('editado');
     let doctor;
     try {
       this.mq = new RabbitMQ();
       await this.mq.connect();
       console.log("Publicado getDoctor");
-      doctor = await this.mq.publishExclusive('getDoctor', { id: appointment.doctorId }) as unknown as Doctor;
+      doctor = await this.mq.publishExclusive('getDoctor', { id: app[0].doctorId }) as unknown as Doctor;
       await this.mq.close();
     }
     catch (ConflictError) {
       throw new Error("Erro ao publicar mensagem");
     }
-    this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
+    this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, app[0].date);
   }
 
   async newAppointment(appointments: Appointment[]) {
@@ -64,11 +67,17 @@ export class ScheduleAppointmentUseCase {
 
 
   async editAppointment(id: string, appointment: Appointment) {
-    const olderAppointment = await this.gateway.findById(id);
-    if (!olderAppointment) {
-      throw new NotFoundError("Appointment not founded");
+    try {
+      const olderAppointment = await this.gateway.findById(id);
+      console.log(olderAppointment.date);
+      if (!olderAppointment) {
+        throw new NotFoundError("Appointment not founded");
+      }
+      await this.gateway.edit(appointment);
     }
-    await this.gateway.edit(appointment);
+    catch (Erro) {
+      console.log('Erro ao editar appointment')
+    }
   }
 
   async findAppointmentsByDoctor(doctorId: string) {
@@ -102,7 +111,7 @@ export class ScheduleAppointmentUseCase {
       await this.mq.connect();
       const appointment: Appointment = message.appointment;
       const id: string = message.id;
-      console.log("Fila editAppointment. ID: " + appointment.id);
+      console.log("Fila editAppointment. ID: " + appointment._id);
       await this.editAppointment(id, appointment);
     });
     await this.mq.consume('listAppointment', async (message: any) => {

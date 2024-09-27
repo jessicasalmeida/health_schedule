@@ -19,7 +19,7 @@ class Gateway {
     save(entity) {
         return __awaiter(this, void 0, void 0, function* () {
             const appointmentDTO = {
-                id: entity.id,
+                _id: entity._id,
                 doctorId: entity.doctorId,
                 patientId: entity.patientId,
                 date: entity.date,
@@ -33,7 +33,7 @@ class Gateway {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield this.dataSource.findById(id);
             if (data) {
-                const dataEntity = new appointment_1.Appointment(data.id, data.doctorId, data.patientId, data.date, data.status);
+                const dataEntity = new appointment_1.Appointment(data._id, data.doctorId, data.patientId, data.date, data.status);
                 return dataEntity;
             }
             throw new not_found_error_1.NotFoundError("Erro ao localizar Appointment");
@@ -43,7 +43,7 @@ class Gateway {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield this.dataSource.edit(object);
             if (data) {
-                const dataEntity = new appointment_1.Appointment(data.id, data.doctorId, data.patientId, data.date, data.status);
+                const dataEntity = new appointment_1.Appointment(data._id, data.doctorId, data.patientId, data.date, data.status);
                 return dataEntity;
             }
             throw new not_found_error_1.NotFoundError("Erro ao localizar Appointment");
@@ -60,7 +60,7 @@ class Gateway {
             const data = yield this.dataSource.findAppointmentsByDoctor(doctorId);
             if (data) {
                 data.forEach(data => {
-                    dataEntity.push(new appointment_1.Appointment(data.id, data.doctorId, data.patientId, data.date, data.status));
+                    dataEntity.push(new appointment_1.Appointment(data._id, data.doctorId, data.patientId, data.date, data.status));
                 });
             }
             return dataEntity;
@@ -72,7 +72,7 @@ class Gateway {
             const data = yield this.dataSource.findAll();
             if (data) {
                 data.forEach(data => {
-                    dataEntity.push(new appointment_1.Appointment(data.id, data.doctorId, data.patientId, data.date, data.status));
+                    dataEntity.push(new appointment_1.Appointment(data._id, data.doctorId, data.patientId, data.date, data.status));
                 });
             }
             return dataEntity;

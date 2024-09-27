@@ -4,7 +4,7 @@ exports.Presenter = void 0;
 class Presenter {
     static toDTO(presenter) {
         let dto = {
-            id: presenter.id,
+            _id: presenter._id,
             doctorId: presenter.doctorId,
             patientId: presenter.patientId,
             date: presenter.date,

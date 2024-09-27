@@ -23,29 +23,30 @@ class ScheduleAppointmentUseCase {
     }
     reserveAppointment(paciente, idAppointment) {
         return __awaiter(this, void 0, void 0, function* () {
-            const appointment = yield this.gateway.findById(idAppointment);
-            if (!appointment) {
+            const appointment = yield this.gateway.findAll();
+            const app = appointment.filter(a => (a._id).toString() === idAppointment);
+            if (!app) {
                 throw new not_found_error_1.NotFoundError("Appointment not founded");
             }
-            console.log(appointment.status);
-            if (!appointment.status) {
+            console.log(app[0].status);
+            if (app[0].status) {
                 throw new conflict_error_1.ConflictError('Horário já está ocupado.');
             }
-            appointment.patientId = paciente._id;
-            appointment.status = true;
-            yield this.gateway.edit(appointment);
+            app[0].patientId = paciente._id;
+            app[0].status = true;
+            yield this.gateway.edit(app[0]);
             let doctor;
             try {
                 this.mq = new mq_1.RabbitMQ();
                 yield this.mq.connect();
                 console.log("Publicado getDoctor");
-                doctor = (yield this.mq.publishExclusive('getDoctor', { id: appointment.doctorId }));
+                doctor = (yield this.mq.publishExclusive('getDoctor', { id: app[0].doctorId }));
                 yield this.mq.close();
             }
             catch (ConflictError) {
                 throw new Error("Erro ao publicar mensagem");
             }
-            this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, appointment.date);
+            this.emailNotificationService.notifyDoctor(doctor.email, doctor.name, paciente.name, app[0].date);
         });
     }
     newAppointment(appointments) {
@@ -66,11 +67,17 @@ class ScheduleAppointmentUseCase {
     }
     editAppointment(id, appointment) {
         return __awaiter(this, void 0, void 0, function* () {
-            const olderAppointment = yield this.gateway.findById(id);
-            if (!olderAppointment) {
-                throw new not_found_error_1.NotFoundError("Appointment not founded");
+            try {
+                const olderAppointment = yield this.gateway.findById(id);
+                console.log(olderAppointment.date);
+                if (!olderAppointment) {
+                    throw new not_found_error_1.NotFoundError("Appointment not founded");
+                }
+                yield this.gateway.edit(appointment);
             }
-            yield this.gateway.edit(appointment);
+            catch (Erro) {
+                console.log('Erro ao editar appointment');
+            }
         });
     }
     findAppointmentsByDoctor(doctorId) {
@@ -104,7 +111,7 @@ class ScheduleAppointmentUseCase {
                 yield this.mq.connect();
                 const appointment = message.appointment;
                 const id = message.id;
-                console.log("Fila editAppointment. ID: " + appointment.id);
+                console.log("Fila editAppointment. ID: " + appointment._id);
                 yield this.editAppointment(id, appointment);
             }));
             yield this.mq.consume('listAppointment', (message) => __awaiter(this, void 0, void 0, function* () {

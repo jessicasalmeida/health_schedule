@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppointmentRepositoryImpl = void 0;
+const mongodb_1 = require("mongodb");
 const db_connect_1 = require("./db-connect");
 class AppointmentRepositoryImpl {
     save(appointment) {
@@ -22,15 +23,15 @@ class AppointmentRepositoryImpl {
     findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const query = { id: id };
-            const savedAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.findOne(query));
+            const query = { _id: new mongodb_1.ObjectId(id) };
+            const savedAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.find({}, { projection: query }));
             return savedAppointment;
         });
     }
     edit(appointment) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const query = { id: (appointment.id) };
+            const query = { _id: (appointment._id) };
             const savedAppointment = yield ((_a = db_connect_1.collections.appointment) === null || _a === void 0 ? void 0 : _a.updateOne(query, { $set: appointment }));
             return savedAppointment;
         });

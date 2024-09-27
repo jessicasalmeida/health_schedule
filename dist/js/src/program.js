@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const server_1 = __importDefault(require("./server"));
 const db_connect_1 = require("./external/data-sources/mongodb/db-connect");
 const routers_1 = require("./external/api/routers");
-const port = 8000;
+const port = 8001;
 (0, db_connect_1.connectToDataBase)()
     .then(() => {
     server_1.default.listen(port, () => {

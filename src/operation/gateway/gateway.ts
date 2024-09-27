@@ -14,7 +14,7 @@ export class Gateway {
 
         const appointmentDTO: AppointmentDTO =
         {
-            id: entity.id,
+            _id: entity._id,
             doctorId: entity.doctorId,
             patientId: entity.patientId,
             date: entity.date,
@@ -28,7 +28,7 @@ export class Gateway {
     async findById(id: string): Promise<Appointment> {
         const data = await this.dataSource.findById(id);
         if (data) {
-            const dataEntity = new Appointment(data.id, data.doctorId, data.patientId, data.date, data.status);
+            const dataEntity = new Appointment(data._id, data.doctorId, data.patientId, data.date, data.status);
             return dataEntity;
         }
         throw new NotFoundError("Erro ao localizar Appointment");
@@ -37,7 +37,7 @@ export class Gateway {
     async edit(object: Appointment): Promise<Appointment> {
         const data = await this.dataSource.edit(object);
         if (data) {
-            const dataEntity = new Appointment(data.id, data.doctorId, data.patientId, data.date, data.status);
+            const dataEntity = new Appointment(data._id, data.doctorId, data.patientId, data.date, data.status);
             return dataEntity;
         }
         throw new NotFoundError("Erro ao localizar Appointment");
@@ -52,7 +52,7 @@ export class Gateway {
         const data = await this.dataSource.findAppointmentsByDoctor(doctorId);
         if (data) {
             data.forEach(data => {
-                dataEntity.push(new Appointment(data.id, data.doctorId, data.patientId, data.date, data.status))
+                dataEntity.push(new Appointment(data._id, data.doctorId, data.patientId, data.date, data.status))
             });
         }
         return dataEntity;
@@ -65,7 +65,7 @@ export class Gateway {
         const data = await this.dataSource.findAll();
         if (data) {
             data.forEach(data => {
-                dataEntity.push(new Appointment(data.id, data.doctorId, data.patientId, data.date, data.status))
+                dataEntity.push(new Appointment(data._id, data.doctorId, data.patientId, data.date, data.status))
             });
         }
         return dataEntity;

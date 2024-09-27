@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { AppointmentRepository } from "../../../common/interfaces/appointment-data-source";
 import { Appointment } from '../../../core/entities/appointment';
 import { collections } from './db-connect';
@@ -11,13 +12,16 @@ export class AppointmentRepositoryImpl implements AppointmentRepository {
 
 
   async findById(id: string): Promise<Appointment> {
-    const query = { id: id };
-    const savedAppointment = await collections.appointment?.findOne(query);
+    const query = { _id: new ObjectId(id) };
+    const savedAppointment = await collections.appointment?.find(
+      {},
+      { projection:query});
+
     return savedAppointment as unknown as Appointment;
   }
 
   async edit(appointment: Appointment): Promise<Appointment> {
-    const query = { id: (appointment.id) };
+    const query = { _id: (appointment._id) };
     const savedAppointment = await collections.appointment?.updateOne(query, { $set: appointment });
     return savedAppointment as unknown as Appointment;
   }

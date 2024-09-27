@@ -1,5 +1,5 @@
 export type AppointmentDTO = {
-  id: string,
+  _id: string,
   doctorId: string,
   patientId: string,
   date: Date,
