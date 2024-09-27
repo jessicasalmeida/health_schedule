@@ -60,7 +60,7 @@
         "name": "Jessica",
         "cpf": "000.000.000-00",
         "crm": "123456789",
-        "email": "jessicasalmeida4@hotmail.com",
+        "email": "jess@hotmail.com",
         "password": "Techchallenge@24"
       }
 
@@ -97,7 +97,7 @@
         "_id": "001",
         "name": "Jessica",
         "cpf": "000.000.000-00",
-        "email": "jessicasalmeida@hotmail.com",
+        "email": "jess@hotmail.com",
         "password": "123456"
    }
 
