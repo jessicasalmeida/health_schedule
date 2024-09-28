@@ -29,7 +29,7 @@
 ### Links DOCs
 - Desenho Arquitetura: https://github.com/jessicasalmeida/health_schedule/blob/main/docs/Arquitetura%20AWS.png
 - Collection: https://github.com/jessicasalmeida/health_schedule/blob/main/docs/health.postman_collection.json
-- Video: https://youtu.be/K5IB4d1KSpQ
+- Video: https://youtu.be/4xqV-i1Fpho
 
 # Dados das APIs
 
